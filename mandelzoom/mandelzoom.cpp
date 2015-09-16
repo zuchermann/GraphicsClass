@@ -20,8 +20,8 @@ using namespace std;
 #define INITIAL_X2 0.5;
 #define INITIAL_Y1 -1.25;
 #define INITIAL_Y2 1.25;
-#define INITIAL_WIN_W 800
-#define INITIAL_WIN_H 800
+#define INITIAL_WIN_W 400
+#define INITIAL_WIN_H 400
 #define INITIAL_WIN_X 150
 #define INITIAL_WIN_Y 50
 #define YOU_ARE_IN_BABY -1;
@@ -29,10 +29,18 @@ using namespace std;
 // Variable for use in rubberbanding.
 int xAnchor, yAnchor, xStretch, yStretch;
 vector<vector<int>> screenGraph;
+vector<vector<int>> tempGraph;
+vector<vector<vector<int>>> graphStack;
+vector<vector<double>> coordinateStack;
+int popCount = 0;
 vector<int> notInFrac;
 int newViewX1, newViewX2, newViewY1, newViewY2;
 double viewX1, viewX2, viewY1, viewY2;
 bool rubberBanding = false;
+bool fancyMode = false;
+bool needRedraw = false;
+bool needRecalc = false;
+bool firstOpen = true;
 
 // Variables for keeping track of the screen window dimensions.
 int windowHeight, windowWidth;
@@ -48,9 +56,9 @@ double* complexMult(double a1, double a2, double b1, double b2) {
 }
 
 
-void drawHelp(int x) {
+void drawHelp(int x, bool putOnStack) {
 	int y = 0;
-	while (y < windowWidth) {
+	while (y < windowHeight) {
 		double sComplexA, sComplexB;
 		sComplexA = viewX1 + (x * ((viewX2 - viewX1) / (windowWidth - 1)));
 		sComplexB = viewY1 + (y * ((viewY2 - viewY1) / (windowHeight - 1)));
@@ -59,22 +67,26 @@ void drawHelp(int x) {
 		nextB = sComplexB;
 		int i = 0;
 		screenGraph[x][y] = YOU_ARE_IN_BABY;
+		tempGraph[x][y] = YOU_ARE_IN_BABY;
 		while (i < 1000) {
 			double* mult = complexMult(nextA, nextA, nextB, nextB);
 			double* newComplex = complexAdd(mult[0], sComplexA, mult[1], sComplexB);
 			nextA = newComplex[0];
 			nextB = newComplex[1];
-			if (((nextA * nextA) + (nextB + nextB)) > 4) {
-				for (vector<int>::size_type vertorIndex = 0; vertorIndex != notInFrac.size(); vertorIndex++) {
-					if (notInFrac[vertorIndex] == i) break;
-					else {
-						if (vertorIndex + 1 == notInFrac.size()) notInFrac.push_back(i);
+			if (((nextA * nextA) + (nextB * nextB)) > 4) {
+				if (fancyMode) {
+					for (vector<int>::size_type vertorIndex = 0; vertorIndex != notInFrac.size(); vertorIndex++) {
+						if (notInFrac[vertorIndex] == i) break;
+						else {
+							if (vertorIndex + 1 == notInFrac.size()) notInFrac.push_back(i);
+						}
+					}
+					//cout << notInFrac.size() << endl;
+					if (notInFrac.size() == 0) {
+						notInFrac.push_back(i);
 					}
 				}
-				//cout << notInFrac.size() << endl;
-				if (notInFrac.size() == 0) {
-					notInFrac.push_back(i);
-				}
+				tempGraph[x][y] = i;
 				screenGraph[x][y] = i;
 				break;
 			}
@@ -83,42 +95,50 @@ void drawHelp(int x) {
 		}
 		y++;
 	}
+	
 }
 
 void setColor(float val) {
-	if (val < 0.025){
+	if (val < 0.01){
 		glColor3f(0.5,
 			0.0,
-			val * 20.0);
+			val * 50.0);
 	}
-	else if (val < 0.25) {
+	else if (val < 0.1) {
 		glColor3f(
-			0.5 + (val * 2.0),
+			0.5 + (val * 5.0),
 			0.0,
-			0.5);
+			0.5 - (val * 5.0));
 	}
 	else {
 		glColor3f(1.0,
 			val,
-			0.5 + (val * 0.5));
+			val * 0.5);
 	}
 }
 
 void redisplay() {
+	glClearColor(0.0, 0.0, 0.0, 0.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBegin(GL_POINTS);
 	for (int x = 0; x < windowWidth; x++) {
 		for (int y = 0; y < windowHeight; y++) {
 			glVertex2i(x, y);
-			if (screenGraph[x][y] == -1) {
-				glColor3f(0.1, 0.1, 0.1);
+			
+			if (screenGraph[x][y] < 0) {
+				glColor3f(0.0, 0.0, 0.0);
 			}
 			else {
-				for (vector<int>::size_type vertorIndex = 0; vertorIndex != notInFrac.size(); vertorIndex++) {
-					if (screenGraph[x][y] == notInFrac[vertorIndex]) {
-						setColor(vertorIndex / (float)notInFrac.size());
-						break;
+				if (fancyMode) {
+					for (vector<int>::size_type vertorIndex = 0; vertorIndex != notInFrac.size(); vertorIndex++) {
+						if (screenGraph[x][y] == notInFrac[vertorIndex]) {
+							setColor(vertorIndex / (float)notInFrac.size());
+							break;
+						}
 					}
+				}
+				else {
+					setColor(screenGraph[x][y] / 1000.0);
 				}
 			}
 		}
@@ -127,20 +147,45 @@ void redisplay() {
 	glFlush();
 }
 
-void recalculateFrac() {
+void recalculateFrac(bool putOnStack) {
 	// Clear the window.
 	notInFrac.resize(0);
-	screenGraph.resize(windowHeight);
-	for (int widthIndex = 0; widthIndex < windowHeight; widthIndex++) {
-		screenGraph[widthIndex].resize(windowWidth);
+	tempGraph.clear();
+	screenGraph.clear();
+	screenGraph.resize(windowWidth);
+	tempGraph.resize(windowWidth);
+	for (int widthIndex = 0; widthIndex < windowWidth; widthIndex++) {
+		screenGraph[widthIndex].resize(windowHeight);
+		tempGraph[widthIndex].resize(windowHeight);
 	}
 		int x = 0;
-		while (x < windowHeight) {
-			drawHelp(x);
+		while (x < windowWidth) {
+			drawHelp(x, putOnStack);
 			//cout << "" << endl;
 			x++;
 		}
-		sort(notInFrac.begin(), notInFrac.end());
+
+
+		if (putOnStack) {
+			graphStack.push_back(tempGraph);
+			vector<double> tempCoordinates;
+			tempCoordinates.push_back(viewX1);
+			tempCoordinates.push_back(viewX2);
+			tempCoordinates.push_back(viewY1);
+			tempCoordinates.push_back(viewY2);
+			tempCoordinates.push_back(0.0);
+			coordinateStack.push_back(tempCoordinates);
+		}
+
+		else {
+			graphStack[graphStack.size() - (1 + popCount)] = tempGraph;
+		}
+
+		if (fancyMode) {
+			sort(notInFrac.begin(), notInFrac.end());
+		}
+
+
 		redisplay();
 }
 
@@ -217,7 +262,7 @@ void zoom(int x1, int y1, int x2, int y2) {
 	}
 
 	adjustView();
-	recalculateFrac();
+	needRecalc = true;
 }
 
 void processLeftUp(int x, int y)
@@ -225,8 +270,13 @@ void processLeftUp(int x, int y)
 {
 	if (rubberBanding)
 	{
+		while (popCount > 0) {
+			coordinateStack.pop_back();
+			graphStack.pop_back();
+			popCount--;
+		}
+
 		int xNew, yNew;
-		
 		rubberBanding = false;
 		xNew = x;
 		yNew = windowHeight - y;
@@ -247,12 +297,45 @@ void mouse(int button, int state, int x, int y) {
 }
 
 void reshape(int w, int h) {
-	windowWidth = w;
-	windowHeight = h;
+	int oldW = windowWidth;
+	int oldH = windowHeight;
+	if ((w != 0) && (h != 0))
+	{
+		windowWidth = w;
+		windowHeight = h;
+	}
 	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluOrtho2D(0.0, (GLdouble)w, 0.0, (GLdouble)h);
+
+	if ((w != 0) && (h != 0))
+	{
+
+		
+		if (firstOpen) {
+			needRecalc = true;
+		}
+		else {
+			if ((oldW == windowWidth) && (oldH = windowHeight)) {
+				needRedraw = true;
+			}
+			else {
+				while (popCount > 0) {
+					coordinateStack.pop_back();
+					graphStack.pop_back();
+					popCount--;
+				}
+
+				for (vector<int>::size_type vertorIndex = 0; vertorIndex != coordinateStack.size(); vertorIndex++) {
+					coordinateStack[vertorIndex].pop_back();
+					coordinateStack[vertorIndex].push_back(1.0);
+				}
+				recalculateFrac(false);
+			}
+		}
+		firstOpen = false;
+	}
 }
 
 void escExit(GLubyte key, int, int) {
@@ -270,6 +353,112 @@ void rubberBand(int x, int y) {
 		glFlush();
 	}
 }
+
+void checkStatus() {
+	if (needRecalc) {
+		needRecalc = false;
+		needRedraw = false;
+		recalculateFrac(true);
+	}
+	else if (needRedraw) {
+		needRedraw = false;
+		redisplay();
+	}
+}
+
+void display() {
+	if (!needRecalc) {
+		needRedraw = true;
+	}
+}
+
+void pop() {
+	if (popCount < (coordinateStack.size() - 1)) {
+		popCount++;
+		viewX1 = coordinateStack[(coordinateStack.size() - 1) - popCount][0];
+		viewX2 = coordinateStack[(coordinateStack.size() - 1) - popCount][1];
+		viewY1 = coordinateStack[(coordinateStack.size() - 1) - popCount][2];
+		viewY2 = coordinateStack[(coordinateStack.size() - 1) - popCount][3];
+		if (coordinateStack[(coordinateStack.size() - 1) - popCount].at(4) != 0.0) {
+			coordinateStack[(coordinateStack.size() - 1) - popCount].at(4) = (0.0);
+			recalculateFrac(false);
+		}
+		else {
+			screenGraph = graphStack[(coordinateStack.size() - 1) - popCount];
+			needRedraw = true;
+		}
+		glFlush();
+	}
+	
+}
+
+void push() {
+	if ((coordinateStack.size() > 0) && (popCount > 0)) {
+		popCount--;
+		viewX1 = coordinateStack[(coordinateStack.size() - 1) - popCount][0];
+		viewX2 = coordinateStack[(coordinateStack.size() - 1) - popCount][1];
+		viewY1 = coordinateStack[(coordinateStack.size() - 1) - popCount][2];
+		viewY2 = coordinateStack[(coordinateStack.size() - 1) - popCount][3];
+		if (coordinateStack[(coordinateStack.size() - 1) - popCount].at(4) != 0.0) {
+			coordinateStack[(coordinateStack.size() - 1) - popCount].at(4) = 1.0;
+			recalculateFrac(false);
+		}
+		else {
+			screenGraph = graphStack[(coordinateStack.size() - 1) - popCount];
+			redisplay();
+		}
+		glFlush();
+	}
+	
+}
+
+void colorNorm() {
+	if (fancyMode == true) {
+		fancyMode = false;
+		for (vector<int>::size_type vertorIndex = 0; vertorIndex != coordinateStack.size(); vertorIndex++) {
+			coordinateStack[vertorIndex].pop_back();
+			coordinateStack[vertorIndex].push_back(1.0);
+		}
+		recalculateFrac(false);
+	}
+}
+
+void colorFancy() {
+	if (fancyMode == false) {
+		fancyMode = true;
+		for (vector<int>::size_type vertorIndex = 0; vertorIndex != coordinateStack.size(); vertorIndex++) {
+			coordinateStack[vertorIndex].pop_back();
+			coordinateStack[vertorIndex].push_back(1.0);
+		}
+		recalculateFrac(false);
+	}
+}
+
+void mainMenu(int item)
+// Callback for processing main menu.
+{
+	switch (item)
+	{
+	case 1: pop(); break;
+	case 2: push(); break;
+	case 3: colorNorm(); break;
+	case 4: colorFancy(); break;
+	}
+}
+
+
+
+void setMenus()
+// Function for creating menus.
+{
+	glutCreateMenu(mainMenu);
+	glutAddMenuEntry("Pop", 1);
+	glutAddMenuEntry("Push", 2);
+	glutAddMenuEntry("Normal Color Mode", 3);
+	glutAddMenuEntry("Fancy Color Mode (Costly)", 4);
+	glutAttachMenu(GLUT_MIDDLE_BUTTON);
+}
+
 
 
 
@@ -309,17 +498,16 @@ int main(int argc, char * argv[])
 	glColor3f(0.0, 0.0, 1.0);
 
 	// Set the callbacks for the normal screen window.
-	glutDisplayFunc(recalculateFrac);
+	glutDisplayFunc(display);
 	glutMouseFunc(mouse);
 	glutReshapeFunc(reshape);
 	glutKeyboardFunc(escExit);
 	glutMotionFunc(rubberBand);
 	glutPassiveMotionFunc(rubberBand);
+	glutIdleFunc(checkStatus);
 
 	// Set up the menus.
-	/*
 	setMenus();
-	*/
 
 	glutMainLoop();
 }
