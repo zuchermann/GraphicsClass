@@ -1,0 +1,181 @@
+(************** Content-type: application/mathematica **************
+                     CreatedBy='Mathematica 5.2'
+
+                    Mathematica-Compatible Notebook
+
+This notebook can be used with any Mathematica-compatible
+application, such as Mathematica, MathReader or Publicon. The data
+for the notebook starts with the line containing stars above.
+
+To get the notebook into a Mathematica-compatible application, do
+one of the following:
+
+* Save the data starting with the line of stars above into a file
+  with a name ending in .nb, then open the file inside the
+  application;
+
+* Copy the data starting with the line of stars above to the
+  clipboard, then use the Paste menu command inside the application.
+
+Data for notebooks contains only printable 7-bit ASCII and can be
+sent directly in email or through ftp in text mode.  Newlines can be
+CR, LF or CRLF (Unix, Macintosh or MS-DOS style).
+
+NOTE: If you modify the data for this notebook not in a Mathematica-
+compatible application, you must delete the line below containing
+the word CacheID, otherwise Mathematica-compatible applications may
+try to use invalid cache data.
+
+For more information on notebooks and Mathematica-compatible 
+applications, contact Wolfram Research:
+  web: http://www.wolfram.com
+  email: info@wolfram.com
+  phone: +1-217-398-0700 (U.S.)
+
+Notebook reader applications are available free of charge from 
+Wolfram Research.
+*******************************************************************)
+
+(*CacheID: 232*)
+
+
+(*NotebookFileLineBreakTest
+NotebookFileLineBreakTest*)
+(*NotebookOptionsPosition[      4037,        121]*)
+(*NotebookOutlinePosition[      4681,        143]*)
+(*  CellTagsIndexPosition[      4637,        139]*)
+(*WindowFrame->Normal*)
+
+
+
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[BoxData[
+    \(mat\  = \ {{m00, m01, m02}, {m10, m11, m12}, {m20, m21, 
+          m22}}\)], "Input"],
+
+Cell[BoxData[
+    \({{m00, m01, m02}, {m10, m11, m12}, {m20, m21, m22}}\)], "Output"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+    \(determinant\  = \ Det[mat]\)], "Input"],
+
+Cell[BoxData[
+    \(\(-m02\)\ m11\ m20 + m01\ m12\ m20 + m02\ m10\ m21 - m00\ m12\ m21 - 
+      m01\ m10\ m22 + m00\ m11\ m22\)], "Output"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+    \(rule\  = \ determinant\  \[Rule] \ dtmt\)], "Input"],
+
+Cell[BoxData[
+    RowBox[{\(General::"spell1"\), \(\(:\)\(\ \)\), "\<\"Possible spelling \
+error: new symbol name \\\"\\!\\(rule\\)\\\" is similar to existing symbol \\\
+\"\\!\\(Rule\\)\\\". \\!\\(\\*ButtonBox[\\\"More\[Ellipsis]\\\", \
+ButtonStyle->\\\"RefGuideLinkText\\\", ButtonFrame->None, \
+ButtonData:>\\\"General::spell1\\\"]\\)\"\>"}]], "Message"],
+
+Cell[BoxData[
+    \(\(-m02\)\ m11\ m20 + m01\ m12\ m20 + m02\ m10\ m21 - m00\ m12\ m21 - 
+        m01\ m10\ m22 + m00\ m11\ m22 \[Rule] dtmt\)], "Output"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+    \(exp\  = \ Inverse[mat] /. rule\)], "Input"],
+
+Cell[BoxData[
+    RowBox[{\(General::"spell1"\), \(\(:\)\(\ \)\), "\<\"Possible spelling \
+error: new symbol name \\\"\\!\\(exp\\)\\\" is similar to existing symbol \
+\\\"\\!\\(Exp\\)\\\". \\!\\(\\*ButtonBox[\\\"More\[Ellipsis]\\\", \
+ButtonStyle->\\\"RefGuideLinkText\\\", ButtonFrame->None, \
+ButtonData:>\\\"General::spell1\\\"]\\)\"\>"}]], "Message"],
+
+Cell[BoxData[
+    \({{\(\(-m12\)\ m21 + m11\ m22\)\/dtmt, \(m02\ m21 - m01\ m22\)\/dtmt, \(\
+\(-m02\)\ m11 + m01\ m12\)\/dtmt}, {\(m12\ m20 - m10\ m22\)\/dtmt, \(\(-m02\)\
+\ m20 + m00\ m22\)\/dtmt, \(m02\ m10 - m00\ m12\)\/dtmt}, {\(\(-m11\)\ m20 + \
+m10\ m21\)\/dtmt, \(m01\ m20 - m00\ m21\)\/dtmt, \(\(-m01\)\ m10 + m00\ m11\)\
+\/dtmt}}\)], "Output"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+    \(exp\ *\ dtmt\)], "Input"],
+
+Cell[BoxData[
+    \({{\(-m12\)\ m21 + m11\ m22, 
+        m02\ m21 - m01\ m22, \(-m02\)\ m11 + m01\ m12}, {m12\ m20 - 
+          m10\ m22, \(-m02\)\ m20 + m00\ m22, 
+        m02\ m10 - m00\ m12}, {\(-m11\)\ m20 + m10\ m21, 
+        m01\ m20 - m00\ m21, \(-m01\)\ m10 + m00\ m11}}\)], "Output"]
+}, Open  ]]
+},
+FrontEndVersion->"5.2 for Microsoft Windows",
+ScreenRectangle->{{0, 1280}, {0, 937}},
+WindowSize->{1272, 905},
+WindowMargins->{{0, Automatic}, {Automatic, 0}}
+]
+
+(*******************************************************************
+Cached data follows.  If you edit this Notebook file directly, not
+using Mathematica, you must remove the line containing CacheID at
+the top of  the file.  The cache data will then be recreated when
+you save this file from within Mathematica.
+*******************************************************************)
+
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+
+(*NotebookFileOutline
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[1776, 53, 105, 2, 30, "Input"],
+Cell[1884, 57, 85, 1, 29, "Output"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+Cell[2006, 63, 59, 1, 30, "Input"],
+Cell[2068, 66, 139, 2, 29, "Output"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+Cell[2244, 73, 72, 1, 30, "Input"],
+Cell[2319, 76, 356, 5, 22, "Message"],
+Cell[2678, 83, 154, 2, 29, "Output"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+Cell[2869, 90, 63, 1, 30, "Input"],
+Cell[2935, 93, 354, 5, 22, "Message"],
+Cell[3292, 100, 352, 5, 76, "Output"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+Cell[3681, 110, 45, 1, 30, "Input"],
+Cell[3729, 113, 292, 5, 29, "Output"]
+}, Open  ]]
+}
+]
+*)
+
+
+
+(*******************************************************************
+End of Mathematica Notebook file.
+*******************************************************************)
+

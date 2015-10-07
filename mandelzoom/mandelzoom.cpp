@@ -21,7 +21,7 @@ using namespace std;
 #define INITIAL_Y1 -1.25;
 #define INITIAL_Y2 1.25;
 #define INITIAL_WIN_W 400
-#define INITIAL_WIN_H 400
+#define INITIAL_WIN_H 200
 #define INITIAL_WIN_X 150
 #define INITIAL_WIN_Y 50
 #define YOU_ARE_IN_BABY -1;
@@ -56,7 +56,7 @@ double* complexMult(double a1, double a2, double b1, double b2) {
 }
 
 
-void drawHelp(int x, bool putOnStack) {
+void drawHelp(int x) {
 	int y = 0;
 	while (y < windowHeight) {
 		double sComplexA, sComplexB;
@@ -84,13 +84,12 @@ void drawHelp(int x, bool putOnStack) {
 					//cout << notInFrac.size() << endl;
 					if (notInFrac.size() == 0) {
 						notInFrac.push_back(i);
-					}
+					} 
 				}
 				tempGraph[x][y] = i;
 				screenGraph[x][y] = i;
 				break;
 			}
-			//cout << screenGraph[x][y] << " ";
 			i++;
 		}
 		y++;
@@ -145,6 +144,7 @@ void redisplay() {
 	}
 	glEnd();
 	glFlush();
+	cout << "mandelzoom " << viewX1 << " " << viewX2 << " " << viewY1 << " " << viewY2 << " " << windowWidth << " " << windowHeight << endl;
 }
 
 void recalculateFrac(bool putOnStack) {
@@ -158,35 +158,34 @@ void recalculateFrac(bool putOnStack) {
 		screenGraph[widthIndex].resize(windowHeight);
 		tempGraph[widthIndex].resize(windowHeight);
 	}
-		int x = 0;
-		while (x < windowWidth) {
-			drawHelp(x, putOnStack);
-			//cout << "" << endl;
+	int x = 0;
+	while (x < windowWidth) {
+			drawHelp(x);
 			x++;
-		}
+	}
 
 
-		if (putOnStack) {
-			graphStack.push_back(tempGraph);
-			vector<double> tempCoordinates;
-			tempCoordinates.push_back(viewX1);
-			tempCoordinates.push_back(viewX2);
-			tempCoordinates.push_back(viewY1);
-			tempCoordinates.push_back(viewY2);
-			tempCoordinates.push_back(0.0);
-			coordinateStack.push_back(tempCoordinates);
-		}
+	if (putOnStack) {
+		graphStack.push_back(tempGraph);
+		vector<double> tempCoordinates;
+		tempCoordinates.push_back(viewX1);
+		tempCoordinates.push_back(viewX2);
+		tempCoordinates.push_back(viewY1);
+		tempCoordinates.push_back(viewY2);
+		tempCoordinates.push_back(0.0);
+		coordinateStack.push_back(tempCoordinates);
+	}
+	
+	else {
+		graphStack[graphStack.size() - (1 + popCount)] = tempGraph;
+	}
 
-		else {
-			graphStack[graphStack.size() - (1 + popCount)] = tempGraph;
-		}
+	if (fancyMode) {
+		sort(notInFrac.begin(), notInFrac.end());
+	}
 
-		if (fancyMode) {
-			sort(notInFrac.begin(), notInFrac.end());
-		}
-
-
-		redisplay();
+		
+	redisplay();
 }
 
 void drawRubberBand(int xA, int yA, int xS, int yS)
@@ -224,12 +223,14 @@ void processLeftDown(int x, int y)
 void adjustView() {
 	int newHeight = abs(newViewY2 - newViewY1);
 	int newWidth = abs(newViewX2 - newViewX1);
-	if (newWidth != newHeight) {
-		if (newWidth > newHeight) {
-			newViewY2 = newViewY1 + newWidth;
+	double oldProp = (windowWidth / (double) windowHeight);
+	double newProp = (newWidth / (double) newHeight);
+	if (oldProp != newProp) {
+		if (newProp > oldProp) {
+			newViewY2 = newViewY1 + (int) ((1.0 / oldProp) * newWidth);
 		}
 		else {
-			newViewX2 = newViewX1 + newHeight;
+			newViewX2 = newViewX1 + (int)( oldProp * newHeight);
 		}
 	}
 	double x1ComplexA, y1ComplexB, x2ComplexA, y2ComplexB;
@@ -441,8 +442,9 @@ void mainMenu(int item)
 	{
 	case 1: pop(); break;
 	case 2: push(); break;
-	case 3: colorNorm(); break;
-	case 4: colorFancy(); break;
+	case 3: std::exit(0); break;
+	case 4: colorNorm(); break;
+	case 5: colorFancy(); break;
 	}
 }
 
@@ -454,8 +456,9 @@ void setMenus()
 	glutCreateMenu(mainMenu);
 	glutAddMenuEntry("Pop", 1);
 	glutAddMenuEntry("Push", 2);
-	glutAddMenuEntry("Normal Color Mode", 3);
-	glutAddMenuEntry("Fancy Color Mode (Costly)", 4);
+	glutAddMenuEntry("Exit", 3);
+	glutAddMenuEntry("Normal Color Mode", 4);
+	glutAddMenuEntry("Fancy Color Mode (WARNING: costly; was an experiment)", 5);
 	glutAttachMenu(GLUT_MIDDLE_BUTTON);
 }
 
@@ -474,20 +477,20 @@ int main(int argc, char * argv[])
 	glutInitDisplayMode(GLUT_RGB);
 
 	// Set initial window size, position, and title.
-	glutInitWindowSize(INITIAL_WIN_W, INITIAL_WIN_H);
+	glutInitWindowSize(atoi(argv[5]), atoi(argv[6]));
 	glutInitWindowPosition(INITIAL_WIN_X, INITIAL_WIN_Y);
 	windowWidth = INITIAL_WIN_W;
 	windowHeight = INITIAL_WIN_H;
-	viewX1 = INITIAL_X1;
-	viewX2 = INITIAL_X2;
-	viewY1 = INITIAL_Y1;
-	viewY2 = INITIAL_Y2
+	viewX1 =  atof(argv[1]);
+	viewX2 = atof(argv[2]);
+	viewY1 = atof(argv[3]);
+	viewY2 = atof(argv[4]);
 	glutCreateWindow("Mandelzoom");
 
 	// You don't (yet) want to know what this does.
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluOrtho2D(0.0, (double)INITIAL_WIN_W, 0.0, (double)INITIAL_WIN_H), glMatrixMode(GL_MODELVIEW);
+	gluOrtho2D(0.0, (double)atoi(argv[5]), 0.0, (double)atoi(argv[6])), glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glTranslatef(0.375, 0.375, 0.0);
 
