@@ -10,7 +10,7 @@ class Vector
    ~Vector();
    double& operator[](int index) const;
   private:
-  //Student must implement.
+   
 };
 
 class Matrix

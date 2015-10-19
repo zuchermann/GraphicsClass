@@ -11,8 +11,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{3874DD8D-2DD7-4388-AA9F-6D867573D5F2}</ProjectGuid>
-    <RootNamespace>Drawing</RootNamespace>
+    <ProjectGuid>{28A07596-D525-48FA-B031-CA7B2B37FEA1}</ProjectGuid>
+    <RootNamespace>PickingHierarchic</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -38,7 +38,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <_ProjectFileVersion>11.0.50727.1</_ProjectFileVersion>
+    <_ProjectFileVersion>14.0.23107.0</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
@@ -88,21 +88,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="drawing.cpp" />
-    <ClCompile Include="graphics.cpp" />
-    <ClCompile Include="matrix.cpp" />
-    <ClCompile Include="matrixTest.cpp" />
-    <ClCompile Include="scene.cpp" />
+    <ClCompile Include="house.cpp" />
+    <ClCompile Include="picking-hierarchic.cpp" />
+    <ClCompile Include="scene-graph.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="drawing.h" />
-    <ClInclude Include="graphics.h" />
-    <ClInclude Include="matrix.h" />
-    <ClInclude Include="matrixTest.h" />
-    <ClInclude Include="scene.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="ClassDiagram.cd" />
+    <ClInclude Include="house.h" />
+    <ClInclude Include="scene-graph.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

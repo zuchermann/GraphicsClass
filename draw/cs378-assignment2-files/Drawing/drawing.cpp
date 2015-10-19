@@ -947,60 +947,60 @@ void mouse( int button, int state, int x, int y )
 }
 
 
-int main(int argc, char *argv[])
-{
-  // Mask doubleing point exceptions.
-   _control87(MCW_EM,MCW_EM);
-
-  // Initialize glut with command line parameters.
-  glutInit( &argc, argv );
-
-  // Choose RGB display mode for normal screen window.
-  glutInitDisplayMode(GLUT_RGB);
-
-  // Set initial window size, position, and title.
-  glutInitWindowSize( INITIAL_WIN_W, INITIAL_WIN_H );
-  glutInitWindowPosition( INITIAL_WIN_X, INITIAL_WIN_Y );
-  windowWidth = INITIAL_WIN_W;
-  windowHeight = INITIAL_WIN_H;
-  xCenter = windowWidth/2;
-  yCenter = windowHeight/2;
-  minCenter = xCenter < yCenter ? xCenter : yCenter;
-  glutCreateWindow("Drawing Program");
-
-  // You don't (yet) want to know what this does.
-  glMatrixMode( GL_PROJECTION );
-  glLoadIdentity( );
-  gluOrtho2D( 0.0, (double) INITIAL_WIN_W, 0.0, (double) INITIAL_WIN_H ),
-  glMatrixMode( GL_MODELVIEW );
-  glLoadIdentity( );
-  glTranslatef( xCenter+0.375, yCenter+0.375, 0.0 );
-
-  // Set the color for clearing thescreen window.
-  glClearColor( 0.0, 0.0, 0.0, 0.0 );
-
-  // Set the callbacks for the screen window.
-  glutDisplayFunc( displayScene );
-  glutMouseFunc( mouse );
-  glutMotionFunc(rubberBand);
-  glutPassiveMotionFunc(rubberBand);
-  glutReshapeFunc(reshape);
-  glutKeyboardFunc( keyboardAsciiFunction );
-  glutSpecialFunc( keyboardNonAsciiFunction );
-
-  // Set the initial state or the drawing system.
-  setColor(color);
-
-  // Set up the menus.
-  setMenus( );
-
-  // Initialize the scene graph to hold only a root node. 
-  sceneRoot = new TransformNode(NULL);
-
-  // Initiate GLUT's main loop. 
-  glutMainLoop( );
-
-  return 0;
-}
+//int main(int argc, char *argv[])
+//{
+//  // Mask doubleing point exceptions.
+//   _control87(MCW_EM,MCW_EM);
+//
+//  // Initialize glut with command line parameters.
+//  glutInit( &argc, argv );
+//
+//  // Choose RGB display mode for normal screen window.
+//  glutInitDisplayMode(GLUT_RGB);
+//
+//  // Set initial window size, position, and title.
+//  glutInitWindowSize( INITIAL_WIN_W, INITIAL_WIN_H );
+//  glutInitWindowPosition( INITIAL_WIN_X, INITIAL_WIN_Y );
+//  windowWidth = INITIAL_WIN_W;
+//  windowHeight = INITIAL_WIN_H;
+//  xCenter = windowWidth/2;
+//  yCenter = windowHeight/2;
+//  minCenter = xCenter < yCenter ? xCenter : yCenter;
+//  glutCreateWindow("Drawing Program");
+//
+//  // You don't (yet) want to know what this does.
+//  glMatrixMode( GL_PROJECTION );
+//  glLoadIdentity( );
+//  gluOrtho2D( 0.0, (double) INITIAL_WIN_W, 0.0, (double) INITIAL_WIN_H ),
+//  glMatrixMode( GL_MODELVIEW );
+//  glLoadIdentity( );
+//  glTranslatef( xCenter+0.375, yCenter+0.375, 0.0 );
+//
+//  // Set the color for clearing thescreen window.
+//  glClearColor( 0.0, 0.0, 0.0, 0.0 );
+//
+//  // Set the callbacks for the screen window.
+//  glutDisplayFunc( displayScene );
+//  glutMouseFunc( mouse );
+//  glutMotionFunc(rubberBand);
+//  glutPassiveMotionFunc(rubberBand);
+//  glutReshapeFunc(reshape);
+//  glutKeyboardFunc( keyboardAsciiFunction );
+//  glutSpecialFunc( keyboardNonAsciiFunction );
+//
+//  // Set the initial state or the drawing system.
+//  setColor(color);
+//
+//  // Set up the menus.
+//  setMenus( );
+//
+//  // Initialize the scene graph to hold only a root node. 
+//  sceneRoot = new TransformNode(NULL);
+//
+//  // Initiate GLUT's main loop. 
+//  glutMainLoop( );
+//
+//  return 0;
+//}
 
 
