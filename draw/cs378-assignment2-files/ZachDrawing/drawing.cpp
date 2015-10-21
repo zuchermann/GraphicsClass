@@ -146,8 +146,9 @@ void rubberBand(int x, int y)
 // Function to clear scene. 
 void clearScene()
 {
+	deSelect();
 	delete sceneRoot;
-	sceneRoot = new TransformNode(NULL);
+	sceneRoot = new TransformNode(nullptr);
 	setOperation(DRAW);
 	glutPostRedisplay();
 }
@@ -959,17 +960,17 @@ int main(int argc, char *argv[])
 {
 
 	//unit test for matrix class
-	matrixTest::matrixTest();
+	//matrixTest::matrixTest();
 
 	//unit test for scene class
-	SceneTest::SceneTest();
+	//SceneTest::SceneTest();
 
 	//tests finished, user can decide whether to go on
-	int goOn = 0;
+	/*int goOn = 0;
 		cout << "tests finished, type \"1\" to continue" << endl;
 	while (goOn != 1) {
 		cin >> goOn;
-	}
+	}*/
 
   // Mask doubleing point exceptions.
    _control87(MCW_EM,MCW_EM);

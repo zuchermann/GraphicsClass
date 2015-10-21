@@ -36,8 +36,12 @@ TransformNode::TransformNode(TransformNode* p, ShapeNode* s, Matrix* t)
 
 TransformNode::~TransformNode()
 {
-	delete shapeNode;
-	delete transform;
+	if (shapeNode) {
+		delete shapeNode;
+	}
+	if (transform) {
+		delete transform;
+	}
 	for (int i = 0; i < children.size(); i++) {
 		delete children.at(i);
 	}
@@ -107,15 +111,22 @@ void TransformNode::changeParent(TransformNode* newParent)
 		cwti = new Matrix(*((cwti->multiply(newParentParent->getTransform()))->getInverse()));
 		newParentParent = newParentParent->getParent();
 	}
-	Matrix* newTransform = new Matrix(*(cwti->multiply((new Matrix(*(transform->multiply(cwt)))))));
+	Matrix* newTransform = new Matrix(*(transform->multiply(cwti->multiply(cwt))));
 	transform = newTransform;
 	oldParent->removeChild(this);
 	newParent->addChild(this);
+	this->setParent(newParent);
 }
 
 void TransformNode::groupObjects(set<TransformNode*>& groupMembers)
 {
-
+	TransformNode* newParent = new TransformNode(this);
+	for (auto it = std::begin(groupMembers); it != std::end(groupMembers); ++it) {
+		newParent->addChild(*it);
+		this->removeChild(*it);
+		(*it)->setParent(newParent);
+	}
+	this->addChild(newParent);
 }
 
 Matrix* TransformNode::getTransform() const
@@ -130,7 +141,13 @@ ShapeNode* TransformNode::getShapeNode() const
 
 TransformNode* TransformNode::clone() const
 {
-	return NULL;
+	TransformNode* nodeCopy = new TransformNode(this->getParent());
+	nodeCopy->shapeNode = this->getShapeNode()->clone();
+	nodeCopy->transform = new Matrix(*(this->getTransform()));
+	for (auto it = std::begin(this->children); it != std::end(this->children); ++it) {
+		nodeCopy->addChild((*it)->clone());
+	}
+	return nodeCopy;
 }
 
 void TransformNode::addChild(TransformNode* child)
@@ -151,22 +168,36 @@ void TransformNode::removeChild(TransformNode* child)
 
 TransformNode* TransformNode::firstChild() const
 {
-	return NULL;
+	if (children.size() > 0) {
+		return children.front();
+	}
 }
 
 TransformNode* TransformNode::lastChild() const
 {
-	return NULL;
+	if (children.size() > 0) {
+		return children.back();
+	}
 }
 
 TransformNode* TransformNode::nextChild(TransformNode* child) const
 {
-	return NULL;
+	for (int i = 0; i < children.size(); i++) {
+		if (children.at(i) == child) {
+				return children.at((i + 1) % children.size());
+		}
+	}
+	return nullptr;
 }
 
 TransformNode* TransformNode::previousChild(TransformNode* child) const
 {
-	return NULL;
+	for (int i = (children.size() - 1); i >= 0 ; i--) {
+		if (children.at(i) == child) {
+			return children.at(((i - 1) + children.size()) % children.size());
+		}
+	}
+	return nullptr;
 }
 
 
@@ -358,8 +389,8 @@ ShapeNode* Polygon::clone() const
 {
 	list<Vector*> newVertices;
 	for (std::list<Vector*>::const_iterator it = vertices.cbegin(); it != vertices.cend(); ++it){
-		Vector newVertex = **it;
-		newVertices.push_back(&newVertex);
+		Vector* newVertex = new Vector(**it);
+		newVertices.push_back(newVertex);
 	}
 	return new Polygon(newVertices, color);
 }
