@@ -79,6 +79,20 @@ void TransformNode::draw(bool displayHelpers) const
 		(*children[i]).draw(displayHelpers);
 	}
 	if (shapeNode != nullptr) {
+		if (displayHelpers) {
+			double lineSize = 8.0;
+			double rectSize = 5.0;
+			Vector* cent = tStack.top()->multiply(new Vector(0.0, 0.0));
+			setColor(shapeNode->getColor());
+			drawLine((*cent)[0] - lineSize, (*cent)[1], (*cent)[0] + lineSize, (*cent)[1]);
+			drawLine((*cent)[0], (*cent)[1] - lineSize, (*cent)[0], (*cent)[1] + lineSize);
+
+			Vector* v1 = new Vector((*cent)[0] - rectSize, (*cent)[1] - rectSize);
+			Vector* v2 = new Vector((*cent)[0] + rectSize, (*cent)[1] - rectSize);
+			Vector* v3 = new Vector((*cent)[0] + rectSize, (*cent)[1] + rectSize);
+			Vector* v4 = new Vector((*cent)[0] - rectSize, (*cent)[1] + rectSize);
+			drawRectangle4v((*v1), (*v2), (*v3), (*v4));
+		}
 		(*shapeNode).draw();
 	}
 	glPopName();
@@ -241,6 +255,11 @@ ShapeNode::ShapeNode(colorType c)
 
 void ShapeNode::select() {
 	isSelected = true;
+}
+
+colorType ShapeNode::getColor()
+{
+	return color;
 }
 
 void ShapeNode::deselect() {

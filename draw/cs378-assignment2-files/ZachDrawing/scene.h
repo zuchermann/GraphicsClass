@@ -62,6 +62,7 @@ public:
 	virtual ShapeNode* clone() const = 0;
 	void select();
 	void deselect();
+	colorType getColor();
 private:
 	colorType color;
 	TransformNode* transform;
