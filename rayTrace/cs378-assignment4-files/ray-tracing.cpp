@@ -1,3 +1,18 @@
+/*
+Ray-Tracing.
+Generates 3d images via ray-tracing.
+
+NOTE: I mistakenly implemented all of the methods in Vec
+to have return type Vec*. This forced me to have a lot of 
+calls to Vec's delete() method throughout the code to prevent
+memory leaks.
+
+NOTE: This program takes a very long time to render the file
+"scene.17" (around 20 minutes on my machine). 
+
+Zach Kondak
+*/
+
 #include <cstdlib>
 #include <cmath>
 #include <cfloat>
@@ -34,6 +49,7 @@ Color backgroundColor;
 Color ambient;
 vector<vector<Color>> pixls;
 
+//initializes pixMap
 void initPix() {
 	int x = 0;
 	while (x < horizontalResolution)
@@ -49,6 +65,7 @@ void initPix() {
 	}
 }
 
+//Generate a ppm file from the pixls
 void generatePic() {
 	ofstream myfile;
 	myfile.open("picture.ppm");
@@ -75,13 +92,15 @@ void generatePic() {
 	myfile.close();
 }
 
+//sorry about the nested ifs. They made sense before the program got really big
+//finds nearest obj. Will return transparent objs only when mayBeTransparent = true
 pair<double, Figure*> nearestIntersection(const Ray& r,
 	double minT, double maxT, double epsilon,
 	bool mayBeTransparent = true)
 {
 	double firstInter = 0;
 	Figure* firstFig = nullptr;
-	for (list<Figure*>::const_iterator iterator = shapeList.begin(), end = shapeList.end(); iterator != end; ++iterator) {
+	for (list<Figure*>::iterator iterator = shapeList.begin(), end = shapeList.end(); iterator != end; ++iterator) {
 		double inter = (*iterator)->intersection(r, minT, maxT);
 		if (inter > 0.0)
 		{
@@ -90,7 +109,7 @@ pair<double, Figure*> nearestIntersection(const Ray& r,
 				if (inter < maxT) {
 					if (inter > minT)
 					{
-						if (inter > epsilon)
+						if (inter > epsilon && (mayBeTransparent || !(*iterator)->isT()))
 						{
 							firstInter = inter;
 							firstFig = (*iterator);
@@ -103,6 +122,7 @@ pair<double, Figure*> nearestIntersection(const Ray& r,
 	return pair<double, Figure*>(firstInter, firstFig);
 }
 
+//calculates diffuse shading
 Color diffuseShade(Figure* obj, Light* light, double dotProduct, double dist)
 {
 	Color dif = obj->getDiffuse();
@@ -111,6 +131,7 @@ Color diffuseShade(Figure* obj, Light* light, double dotProduct, double dist)
 	return product.scale(dotProduct);
 }
 
+//calculates specular shading
 Color specularShade(Figure* obj, const Vec& normal,
 	Light* light, const Vec& lightDirection, double dotProduct,
 	const Ray& ray, double dist)
@@ -121,14 +142,15 @@ Color specularShade(Figure* obj, const Vec& normal,
 	return product.scale(dotProduct);
 }
 
+//alg for calculating shading. Calls diffuseShade and SpecularShade
 Color RT_lights(Figure* obj, const Ray& ray, const Vec& thePoint, const Vec& normal)
 {
-	Color c = *(new Color());
+	Color c = Color();
 	for (list<Light*>::iterator iterator = lightList.begin(), end = lightList.end(); iterator != end; ++iterator) {
-		
 		Light* theLight = *iterator;
+
 		pair<double, Figure*> inter = nearestIntersection(Ray(Vec(thePoint), theLight->getPos()), MIN_T / SHAD_RES, 1.0, EPSILON, false);
-		//if (inter.first <= 0) {
+		if (inter.first <= 0) {
 			Vec* toLight = thePoint.normalize(theLight->getPos());
 			double dotProduct = toLight->dot(normal);
 			Vec* subt = (thePoint.sub(theLight->getPos()));
@@ -138,7 +160,9 @@ Color RT_lights(Figure* obj, const Ray& ray, const Vec& thePoint, const Vec& nor
 			Vec* S = Q->sub(*toLight);
 			Vec* S2 = S->scale(2.0);
 			Vec* R = toLight->add(*S2);
-			dotProduct = max(0.0, R->dot(*(ray.getNorm().scale(-1.0))));
+			Vec* norm = ray.getNorm();
+			Vec* scaledNorm = norm->scale(-1.0);
+			dotProduct = max(0.0, R->dot(*scaledNorm));
 			Color spec = specularShade(obj, normal, theLight, *toLight, pow(dotProduct, obj->getShininess()), ray, dist);
 			c = c.add(dif.add(spec));
 			delete(toLight);
@@ -147,13 +171,17 @@ Color RT_lights(Figure* obj, const Ray& ray, const Vec& thePoint, const Vec& nor
 			delete(R);
 			delete(S2);
 			delete(subt);
-		//}
+			delete(norm);
+			delete(scaledNorm);
+		}
 	}
 	return c;
 }
 
+//stub. body found bellow
 Color RT_Trace(const Ray& r, int depth);
 
+//calculates reflections. Recursively calls RT_Trace
 Color RT_reflect(Figure* obj, const Ray& ray, const Vec& i, const Vec& normal, double depth)
 {
 	if (obj->isR()) {
@@ -179,20 +207,23 @@ Color RT_reflect(Figure* obj, const Ray& ray, const Vec& i, const Vec& normal, d
 	else return Color(0, 0, 0);
 }
 
+//calctulates refractions. Recursively calls RT_Trace
 Color RT_transmit(Figure* obj, const Ray& ray, const Vec& i, const Vec& normal,
-	bool entering, double depth)
+	bool inside, double depth)
 {
 	Color returnColor = Color(0, 0, 0);
 	if (obj->isT()) {
 		double ratio = 0;
 		Ray transmittedRay = Ray();
-		Vec* norm = new Vec(normal);
-		if (!entering) {
+		double dir = 1.0;
+		if (!inside) {
 			ratio = SPACE_INDEX / obj->getIOR();
 		}
 		else {
 			ratio = obj->getIOR() / SPACE_INDEX;
+			dir = -1.0;
 		}
+		Vec* norm = normal.scale(dir);
 		Vec* V = ray.getV2().normalize(ray.getV1());
 		double dp = norm->dot(*V);
 		double rsqrd = pow(ratio, 2.0);
@@ -203,11 +234,15 @@ Color RT_transmit(Figure* obj, const Ray& ray, const Vec& i, const Vec& normal,
 		Vec* dest = i.add(*T);
 		Vec* iCopy = new Vec(i);
 		Ray* tranRay = new Ray(*iCopy, *dest);
-		tranRay->setInside(obj);
+		if (inside) {
+			tranRay->setInside(nullptr);
+		}
+		else tranRay->setInside(obj);
 		returnColor = RT_Trace(*tranRay, depth + 1);
 		delete(scaledN);
 		delete(rV);
 		delete(V);
+		delete(T);
 		delete(dest);
 		delete(iCopy);
 		delete(tranRay);
@@ -216,25 +251,29 @@ Color RT_transmit(Figure* obj, const Ray& ray, const Vec& i, const Vec& normal,
 	return returnColor;
 }
 
+//Calculates the pixel color by summing the resulring colors from RT_lights, RT_reflect, RT_transmit.
 Color RT_shade(Figure* obj, const Ray& ray, const Vec& thePoint, const Vec& normal,
-	bool entering, double depth)
+	bool inside, double depth)
 {
 	Color ambColor = (ambient.mult(obj->getAmbient()));
 	Color shadeColor = RT_lights(obj, ray, thePoint, normal);
 	Color reflect = RT_reflect(obj, ray, thePoint, normal, depth);
-	Color trans = RT_transmit(obj, ray, thePoint, normal, entering, depth);
+	Color trans = RT_transmit(obj, ray, thePoint, normal, inside, depth);
 	Color sum = shadeColor.add(ambColor.add(reflect.add(trans)));
 	return sum;
 }
 
+//Where the tracing happens. Calls RT_shade if an object is hit by the ray.
 Color RT_Trace(const Ray& r, int depth) {
 	if (depth < maxDepth + 1) {
 		pair<double, Figure*> nearestObj = nearestIntersection(r, MIN_T, MAX_T, EPSILON);
 		if (nearestObj.first > 0) {
 			Vec* intersectVec = new Vec(r.calcAt(nearestObj.first));
 			bool isIn = false;
-			if (nearestObj.second == r.isInside()) isIn = true;
-			Color returnColor = RT_shade(nearestObj.second, r, *intersectVec, (nearestObj.second)->norm(*intersectVec), isIn, depth).cut();
+			if (r.getInside() != nullptr) isIn = true;
+			Vec* norm = (nearestObj.second)->norm(*intersectVec);
+			Color returnColor = RT_shade(nearestObj.second, r, *intersectVec, *norm, isIn, depth).cut();
+			delete(norm);
 			delete(intersectVec);
 			return returnColor;
 		}
@@ -243,6 +282,7 @@ Color RT_Trace(const Ray& r, int depth) {
 	else return Color(0.0, 0.0, 0.0);
 }
 
+//Makes initial (first order) calls to RT_Trace. 
 void RT_alg() {
 	double pixWidth = (maxX - minX) / horizontalResolution;
 	double pixHeight = (maxY - minY) / verticalResolution;
@@ -266,6 +306,11 @@ void RT_alg() {
 	}
 }
 
+//***CLASSES START HERE***//
+
+//
+//**Vec
+//
 Vec::~Vec(){}
 
 Vec::Vec() : x(0.0),y(0.0),z(0.0) {}
@@ -294,6 +339,8 @@ Vec* Vec::sub(const Vec& vec2) const
 	return newVec;
 }
 
+//normalize takes two vectors. Will automatically adjust 
+//vectors so that the first is located at the origin.
 Vec* Vec::normalize(const Vec& vec2) const
 {
 	Vec* dir = vec2.sub(*this);
@@ -328,13 +375,16 @@ double Vec::getZ() const {
 	return z;
 }
 
+//
+//**Ray
+//
 Ray::~Ray() {}
 
 Ray::Ray()
 {
 	this->inside = nullptr;
-	this->vec1 = *(new Vec());
-	this->vec2 = *(new Vec());
+	this->vec1 = Vec();
+	this->vec2 = Vec();
 }
 
 Ray::Ray(Vec& vec1, Vec& vec2) {
@@ -343,6 +393,7 @@ Ray::Ray(Vec& vec1, Vec& vec2) {
 	this->vec2 = vec2;
 }
 
+//calculates the point along the ray at time t
 Vec Ray::calcAt(double t) const {
 	Vec* unit = (this->vec2).sub(this->vec1);
 	Vec* scaled = (unit->scale(t));
@@ -364,12 +415,12 @@ Vec Ray::getV2() const
 	return this->vec2;
 }
 
-Vec Ray::getNorm() const
+Vec* Ray::getNorm() const
 {
-	return *(this->vec1).normalize(this->vec2);
+	return (this->vec1).normalize(this->vec2);
 }
 
-Figure* Ray::isInside() const
+Figure* Ray::getInside() const
 {
 	return inside;
 }
@@ -377,6 +428,10 @@ Figure* Ray::isInside() const
 void Ray::setInside(Figure* inside) {
 	this->inside = inside;
 }
+
+//
+//Color
+//
 
 Color:: ~Color() {}
 
@@ -425,6 +480,35 @@ Color Color::cut() const{
 	return Color(min(1.0, red), min(1.0, green), min(1.0, blue));
 }
 
+//
+//Light
+//
+
+Light::~Light() {}
+
+Light::Light(ifstream& ifs) : position(ifs), shading(ifs)
+{
+	ifs >> c0 >> c1 >> c2;
+}
+
+Vec Light::getPos() const {
+	return Vec(this->position);
+}
+
+Color Light::getShading() const {
+	return Color(this->shading);
+}
+
+//attenuate light
+Color Light::getAtt(double dist) const {
+	double att = this->c0 + (this->c1 * dist) + (this->c2 * pow(dist, 2));
+	return Color(this->shading.scale(att));
+}
+
+//
+//Figure
+//
+
 Figure::~Figure() {}
 
 Figure::Figure(){}
@@ -456,8 +540,8 @@ double Figure::intersection(const Ray& r, double minT, double maxT) const
 	return 0;
 }
 
-Vec Figure::norm(const Vec vec) const {
-	return *(new Vec());
+Vec* Figure::norm(const Vec vec) const {
+	return new Vec();
 }
 
 double Figure::getShininess() const {
@@ -480,25 +564,9 @@ double Figure::getIOR() {
 	return indexOfRefraction;
 }
 
-Light::~Light() {}
-
-Light::Light(ifstream& ifs) : position(ifs), shading(ifs)
-{
-  ifs >> c0 >> c1 >> c2;
-}
-
-Vec Light::getPos() const {
-	return *(new Vec(this->position));
-}
-
-Color Light::getShading() const {
-	return *(new Color(this->shading));
-}
-
-Color Light::getAtt(double dist) const {
-	double att = this->c0 + (this->c1 * dist) + (this->c2 * pow(dist, 2));
-	return Color(this->shading.scale(att));
-}
+//
+//Sphere
+//
 
 Sphere::~Sphere() {};
 
@@ -508,6 +576,7 @@ Sphere::Sphere(ifstream& ifs) : center(ifs)
   initFigure(ifs);
 }
 
+//calculates the nearest point of interesction of ray r with this sphere 
 double Sphere::intersection(const Ray& r, double minT, double maxT) const
 {
 	Vec P0 = r.getV1();
@@ -553,9 +622,13 @@ double Sphere::intersection(const Ray& r, double minT, double maxT) const
 	else return 0;
 }
 
-Vec Sphere::norm(const Vec vec) const {
-	return *(this->center.normalize(vec));
+Vec* Sphere::norm(const Vec vec) const {
+	return this->center.normalize(vec);
 }
+
+//
+//Plane
+//
 
 Plane::~Plane() {};
 
@@ -586,9 +659,9 @@ double Plane::intersection(const Ray& r, double minT, double maxT) const
 	return t;
 }
 
-Vec Plane::norm(const Vec vec) const {
+Vec* Plane::norm(const Vec vec) const {
 	//return *Vec().normalize(abcVector);
-	return *abcVector.scale(-1.0);
+	return abcVector.scale(-1.0);
 }
 
 void parseSceneFile(char* sceneName)

@@ -44,8 +44,8 @@ public:
 	Vec getV1() const;
 	Vec getV2() const;
 	Vec calcAt(double t) const;
-	Vec getNorm() const;
-	Figure* isInside() const;
+	Vec* getNorm() const;
+	Figure* getInside() const;
 	void setInside(Figure* isIn);
 };
 
@@ -103,7 +103,7 @@ class Figure
    ~Figure();
    Figure();
    virtual double intersection(const Ray& r, double minT, double maxT) const;
-   virtual Vec norm(const Vec vec) const;
+   virtual Vec* norm(const Vec vec) const;
    void initFigure(ifstream& ifs);
    Color getAmbient();
    Color getDiffuse();
@@ -128,7 +128,7 @@ class Plane : public Figure
 	~Plane();
     Plane(ifstream& ifs);
 	double intersection(const Ray& r, double minT, double maxT) const;
-	Vec norm(const Vec vec) const;
+	Vec* norm(const Vec vec) const;
 };
 
 class Sphere : public Figure
@@ -140,6 +140,6 @@ class Sphere : public Figure
 	~Sphere();
     Sphere(ifstream& ifs);
 	double intersection(const Ray & r, double minT, double maxT) const;
-	Vec norm(const Vec vec) const;
+	Vec* norm(const Vec vec) const;
 };
 
