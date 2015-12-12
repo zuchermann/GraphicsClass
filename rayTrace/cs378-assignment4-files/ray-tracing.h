@@ -15,6 +15,7 @@ class Vec
     double z;
 
   public:
+	~Vec();
     Vec();
     Vec(ifstream& ifs);
 	Vec(double ex, double wi, double zee);
@@ -25,6 +26,9 @@ class Vec
 	Vec* scale(double t) const;
 	Vec* add(const Vec& vec2) const;
 	double getMag() const;
+	double getX() const;
+	double getY() const;
+	double getZ() const;
 };
 
 class Ray
@@ -32,13 +36,17 @@ class Ray
 private:
 	Vec vec1;
 	Vec vec2;
+	Figure* inside;
 public:
+	~Ray();
 	Ray();
 	Ray(Vec& vec1, Vec& vec2);
 	Vec getV1() const;
 	Vec getV2() const;
 	Vec calcAt(double t) const;
 	Vec getNorm() const;
+	Figure* isInside() const;
+	void setInside(Figure* isIn);
 };
 
 
@@ -50,6 +58,7 @@ class Color
    double red, green, blue;
 
   public:
+	~Color();
 	Color();
     Color(ifstream& ifs);
     Color(double r, double g, double b);
@@ -60,12 +69,13 @@ class Color
 	Color mult(const Color color2) const;
 	Color add(const Color color2) const;
 	Color scale(double dp) const;
-	void cut();
+	Color cut() const;
 };
 
 class Light
 {
   public:
+	~Light();
     Light(ifstream& ifs);
 	Color getShading() const;
 	Vec getPos() const;
@@ -90,6 +100,7 @@ class Figure
    int rFlag, tFlag;
 
  public:
+   ~Figure();
    Figure();
    virtual double intersection(const Ray& r, double minT, double maxT) const;
    virtual Vec norm(const Vec vec) const;
@@ -97,6 +108,10 @@ class Figure
    Color getAmbient();
    Color getDiffuse();
    Color getSpec();
+   Color getRef();
+   double getIOR();
+   bool isR();
+   bool isT();
    double getShininess() const;
 };
 
@@ -110,9 +125,10 @@ class Plane : public Figure
     Vec direction1;
     Vec direction2;
   public:
+	~Plane();
     Plane(ifstream& ifs);
 	double intersection(const Ray& r, double minT, double maxT) const;
-	virtual Vec norm(const Vec vec) const;
+	Vec norm(const Vec vec) const;
 };
 
 class Sphere : public Figure
@@ -121,8 +137,9 @@ class Sphere : public Figure
     Vec center;
     double radius;
   public:
+	~Sphere();
     Sphere(ifstream& ifs);
 	double intersection(const Ray & r, double minT, double maxT) const;
-	virtual Vec norm(const Vec vec) const;
+	Vec norm(const Vec vec) const;
 };
 
